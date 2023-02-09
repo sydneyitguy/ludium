@@ -3,7 +3,9 @@ Practice exercise for managing a simple ERC20 airdrop
 
 ## 📄 Contracts
 - MungToken: ERC20 token with Mintable capability
+  - Goerli testnet: 0x838Ab5ccdf9336098e4dFDCD054d23CE6874eE21
 - MungAirdrop: An airdrop contract that mint 100 MUNG token on every claim
+  - Goerli testnet: 0xd1db48709B305C952A9DE47f60cfecE70f43E915
 
 ## 🧪 Test
 ```shell
