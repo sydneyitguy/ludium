@@ -22,7 +22,8 @@ module.exports = {
   gasReporter: {
     enabled: true,
     currency: 'USD',
-    gasPrice: 15
+    gasPrice: 15,
+    coinmarketcap: process.env.COIN_MARKET_CAP_API
   },
   etherscan: {
     // network list: https://github.com/NomicFoundation/hardhat/blob/master/packages/hardhat-etherscan/src/ChainConfig.ts
