@@ -16,6 +16,7 @@ contract MungAirdrop {
   event Airdrop(address indexed to, uint256 amount);
 
   constructor(address mungToken_) {
+    // NOTE: must transfer ownership of mungToken to enable airdrop function
     mungToken = IMungToken(mungToken_);
   }
 
