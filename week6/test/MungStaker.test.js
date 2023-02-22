@@ -3,32 +3,32 @@ const { expect } = require('chai');
 
 describe('MungStaker', function () {
   async function deployMungTokenFixture() {
-    const MungToken = await ethers.getContractFactory('MintableToken');
-    const mungToken = await MungToken.deploy('MungToken', 'MUNG');
+    const MungToken = await ethers.getContractFactory('MungToken');
+    const mungToken = await MungToken.deploy();
 
-    const FarmToken = await ethers.getContractFactory('MintableToken');
-    const farmToken = await MungToken.deploy('FarmToken', 'FARM');
+    const MungNFT = await ethers.getContractFactory('MungNFT');
+    const mungNFT = await MungNFT.deploy();
 
     const MungStaker = await ethers.getContractFactory('MungStaker');
-    const mungStaker = await MungStaker.deploy(mungToken.address, farmToken.address);
+    const mungStaker = await MungStaker.deploy(mungToken.address, mungNFT.address);
 
     // Transfer ownership of FARM Token to the staker contract so it can mint tokens
-    await farmToken.transferOwnership(mungStaker.address);
+    await mungToken.transferOwnership(mungStaker.address);
 
-    return [mungToken, farmToken, mungStaker];
+    return [mungToken, mungNFT, mungStaker];
   }
 
-  let mungToken, farmToken, mungStaker;
+  let mungToken, mungNFT, mungStaker;
   let owner, alice;
 
   beforeEach(async function () {
-    [mungToken, farmToken, mungStaker] = await loadFixture(deployMungTokenFixture);
+    [mungToken, mungNFT, mungStaker] = await loadFixture(deployMungTokenFixture);
     [owner, alice] = await ethers.getSigners();
   });
 
   describe('Deployment', function () {
-    it('should transferred the token owner to the airdrop contract', async function () {
-      expect(await farmToken.owner()).to.equal(mungStaker.address);
+    it('should transferred the token owner to the staker contract', async function () {
+      expect(await mungToken.owner()).to.equal(mungStaker.address);
     });
 
     it('should set the right Mung Token address', async function() {
@@ -36,7 +36,7 @@ describe('MungStaker', function () {
     });
 
     it('should set the right Mung Token address', async function() {
-      expect(await mungStaker.farmToken()).to.equal(farmToken.address);
+      expect(await mungStaker.mungNFT()).to.equal(mungNFT.address);
     });
 
     it('should have 0 claimedCount', async function() {
@@ -47,42 +47,43 @@ describe('MungStaker', function () {
   describe('Lock-up', function() {
     describe('Normal flow', function() {
       beforeEach(async function() {
-        await mungToken.mint(alice.address, 1000);
-        await mungToken.connect(alice).approve(mungStaker.address, 1000);
+        await mungNFT.safeMint(alice.address);
+        await mungNFT.connect(alice).approve(mungStaker.address, 0);
       });
 
-      it('should deduct the lock-up amount from alice', async function() {
-        await mungStaker.connect(alice).lockUp(100);
-        expect(await mungToken.balanceOf(alice.address)).to.equal(900);
+      it('should transfer the NFT from alice to the staker contract', async function() {
+        expect(await mungNFT.balanceOf(alice.address)).to.equal(1);
+        await mungStaker.connect(alice).lockUp(0);
+        expect(await mungNFT.balanceOf(alice.address)).to.equal(0);
       });
 
       it('should stored the lock-up correctly', async function() {
-        await mungStaker.connect(alice).lockUp(1000);
-        const [lockedAt, amount] = await mungStaker.userLockUp(alice.address);
+        await mungStaker.connect(alice).lockUp(0);
+        const [lockedAt, user] = await mungStaker.tokenLockUp(0);
         expect(lockedAt).to.equal(await time.latest());
-        expect(amount).to.equal(1000);
+        expect(user).to.equal(alice.address);
       });
 
       // TODO: more test cases
 
       it('should emit lock-up event', async function () {
-        await expect(mungStaker.connect(alice).lockUp(300))
+        await expect(mungStaker.connect(alice).lockUp(0))
           .emit(mungStaker, 'LockedUp')
-          .withArgs(alice.address, 300);
+          .withArgs(alice.address, 0);
       });
     });
 
     describe('Edge cases', function() {
       it('should revert if the mungToken is not approved', async function() {
-        await mungToken.mint(alice.address, 1000);
-        await expect(mungStaker.connect(alice).lockUp(100)).to.be.revertedWith('ERC20: insufficient allowance');
+        await mungNFT.safeMint(alice.address);
+        await expect(mungStaker.connect(alice).lockUp(0)).to.be.revertedWith('ERC721: caller is not token owner or approved');
       });
 
       it('should revert if locked-up already exists', async function() {
-        await mungToken.mint(alice.address, 1000);
-        await mungToken.connect(alice).approve(mungStaker.address, 1000);
-        await mungStaker.connect(alice).lockUp(100);
-        await expect(mungStaker.connect(alice).lockUp(200)).to.be.revertedWithCustomError(
+        await mungNFT.safeMint(alice.address);
+        await mungNFT.connect(alice).approve(mungStaker.address, 0);
+        await mungStaker.connect(alice).lockUp(0);
+        await expect(mungStaker.connect(alice).lockUp(0)).to.be.revertedWithCustomError(
           mungStaker,
           'MungStaker__LockUpAlreadyExists'
         );
@@ -95,46 +96,46 @@ describe('MungStaker', function () {
   describe('Unlock', function() {
     describe('Normal flow', function() {
       beforeEach(async function() {
-        await mungToken.mint(alice.address, 1000);
-        await mungToken.connect(alice).approve(mungStaker.address, 1000);
-        await mungStaker.connect(alice).lockUp(200);
+        await mungNFT.safeMint(alice.address);
+        await mungNFT.connect(alice).approve(mungStaker.address, 0);
+        await mungStaker.connect(alice).lockUp(0);
         await time.increaseTo(await time.latest() + 600);
       });
 
       it('should return the lock-up amount to alice', async function() {
-        await mungStaker.connect(alice).unlock();
-        expect(await mungToken.balanceOf(alice.address)).to.equal(1000);
+        await mungStaker.connect(alice).unlock(0);
+        expect(await mungNFT.balanceOf(alice.address)).to.equal(1);
       });
 
       it('should remove the lock-up', async function() {
-        expect(await mungStaker.lockUpExists(alice.address)).to.equal(true);
-        await mungStaker.connect(alice).unlock();
-        expect(await mungStaker.lockUpExists(alice.address)).to.equal(false);
+        expect(await mungStaker.lockUpExists(0)).to.equal(true);
+        await mungStaker.connect(alice).unlock(0);
+        expect(await mungStaker.lockUpExists(0)).to.equal(false);
       });
 
       // TODO: more test cases
 
       it('should emit unlocked event', async function () {
-        await expect(mungStaker.connect(alice).unlock())
+        await expect(mungStaker.connect(alice).unlock(0))
           .emit(mungStaker, 'Unlocked')
-          .withArgs(alice.address, 200);
+          .withArgs(alice.address, 0);
       });
     });
 
     describe('Edge cases', function() {
       it('should revert if the user does not have lock-up', async function() {
-        await expect(mungStaker.connect(alice).unlock()).to.be.revertedWithCustomError(
+        await expect(mungStaker.connect(alice).unlock(0)).to.be.revertedWithCustomError(
           mungStaker,
           'MungStaker__LockUpDoesNotExists'
         );
       });
 
       it('should revert if the lock-up has not matured', async function() {
-        await mungToken.mint(alice.address, 1000);
-        await mungToken.connect(alice).approve(mungStaker.address, 1000);
-        await mungStaker.connect(alice).lockUp(200);
+        await mungNFT.safeMint(alice.address);
+        await mungNFT.connect(alice).approve(mungStaker.address, 0);
+        await mungStaker.connect(alice).lockUp(0);
         await time.increaseTo(await time.latest() + 500); // 500 sec later
-        await expect(mungStaker.connect(alice).unlock()).to.be.revertedWithCustomError(
+        await expect(mungStaker.connect(alice).unlock(0)).to.be.revertedWithCustomError(
           mungStaker,
           'MungStaker__LockUpHasNotMatured'
         );

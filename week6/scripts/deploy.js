@@ -5,32 +5,32 @@ async function main() {
   const deployer = accounts[0].address;
   console.log(`Deploy from account: ${deployer}`);
 
-  const MungToken = await hre.ethers.getContractFactory('MintableToken');
-  const mungToken = await MungToken.deploy('MungToken', 'MUNG');
+  const MungToken = await hre.ethers.getContractFactory('MungToken');
+  const mungToken = await MungToken.deploy();
   await mungToken.deployed();
   console.log(` -> MungToken contract deployed at ${mungToken.address}`);
 
-  const FarmToken = await hre.ethers.getContractFactory('MintableToken');
-  const farmToken = await FarmToken.deploy('FarmToken', 'FARM');
-  await farmToken.deployed();
-  console.log(` -> FarmToken contract deployed at ${farmToken.address}`);
+  const MungNFT = await hre.ethers.getContractFactory('MungNFT');
+  const mungNFT = await MungNFT.deploy();
+  await mungNFT.deployed();
+  console.log(` -> MungNFT contract deployed at ${mungNFT.address}`);
 
   const MungStaker = await hre.ethers.getContractFactory('MungStaker');
-  const mungStaker = await MungStaker.deploy(mungToken.address, farmToken.address);
+  const mungStaker = await MungStaker.deploy(mungToken.address, mungNFT.address);
   await mungStaker.deployed();
   console.log(` -> MungStaker contract deployed at ${mungStaker.address}`);
 
   console.log(`\n\nNetwork: ${hre.network.name}`);
   console.log('```');
   console.log(`- MungToken: ${mungToken.address}`);
-  console.log(`- FarmToken: ${farmToken.address}`);
+  console.log(`- MungNFT: ${mungNFT.address}`);
   console.log(`- MungStaker: ${mungStaker.address}`);
   console.log('```');
 
   console.log(`
-    npx hardhat verify --network ${hre.network.name} ${mungToken.address} 'MungToken' 'MUNG'
-    npx hardhat verify --network ${hre.network.name} ${farmToken.address} 'FarmToken' 'FARM'
-    npx hardhat verify --network ${hre.network.name} ${mungStaker.address} '${mungToken.address}' '${farmToken.address}'
+    npx hardhat verify --network ${hre.network.name} ${mungToken.address}
+    npx hardhat verify --network ${hre.network.name} ${mungNFT.address}
+    npx hardhat verify --network ${hre.network.name} ${mungStaker.address} '${mungToken.address}' '${mungNFT.address}'
   `);
 };
 

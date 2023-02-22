@@ -5,10 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract MintableToken is ERC20, ERC20Burnable, Ownable {
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
+contract MungToken is ERC20, ERC20Burnable, Ownable {
+    constructor() ERC20("MungToken", "MUNG") {}
 
-    function mint(address to, uint256 amount) public onlyOwner {
+    function mint(address to, uint256 amount) external onlyOwner {
         _mint(to, amount);
     }
 }

@@ -1,79 +1,75 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "./IMintableToken.sol";
+import "./IMungToken.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 /** @dev
  * This is a practice exercise for a simple staking contract.
- * Users can lock up MungToken for 10 minutes to receive FarmTokens.
- * When the lock-up is unlocked, 10% of the MungToken lock-up amount
- * will be minted as FarmTokens and sent to the staker.
+ * Users can lock up MungNFT for 10 minutes to receive 100 MungTokens.
  */
 
 contract MungStaker {
-  error MungStaker__InvalidAmount();
   error MungStaker__LockUpAlreadyExists();
   error MungStaker__LockUpDoesNotExists();
   error MungStaker__LockUpHasNotMatured();
 
-  IMintableToken public mungToken; // Token to be staked
-  IMintableToken public farmToken; // Token to be farmed
+  IMungToken public mungToken; // Token to be staked
+  IERC721 public mungNFT; // Token to be farmed
 
   uint256 public constant LOCK_UP_DURATION = 600; // 10 minutes
-  uint256 public constant FARMING_RATIO = 1000; // 1,000bp = 10% of lockUp amount
+  uint256 public constant FARMING_AMOUNT = 100 * 10**18; // 100 MUNG
 
   // Gas saving
   // REF: https://medium.com/@novablitz/774da988895e
   struct LockUp {
     uint40 lockedAt;
-    uint216 amount;
+    address user; // 160 bits
   }
-  // To make it simple, a wallet can only have one lockUp at the same time
-  mapping (address => LockUp) public userLockUp;
+
+  mapping (uint256 => LockUp) public tokenLockUp;
+
   uint256 public activeLockUpCount;
 
-  event LockedUp(address indexed user, uint216 amount);
-  event Unlocked(address indexed user, uint216 amount);
+  event LockedUp(address indexed user, uint256 tokenId);
+  event Unlocked(address indexed user, uint256 tokenId);
 
-  constructor(address mungToken_, address farmToken_) {
-    mungToken = IMintableToken(mungToken_);
-    farmToken = IMintableToken(farmToken_); // must have the ownership
+  constructor(address mungToken_, address mungNFT_) {
+    mungToken = IMungToken(mungToken_); // must have the ownership
+    mungNFT = IERC721(mungNFT_);
   }
 
-  function lockUp(uint216 amount) external {
-    if (amount == 0) revert MungStaker__InvalidAmount();
+  function lockUp(uint256 tokenId) external {
+    LockUp storage lock = tokenLockUp[tokenId];
+    if (lock.lockedAt > 0) revert MungStaker__LockUpAlreadyExists();
 
-    LockUp storage ul = userLockUp[msg.sender];
-    if (ul.lockedAt > 0) revert MungStaker__LockUpAlreadyExists();
+    mungNFT.transferFrom(msg.sender, address(this), tokenId);
 
-    mungToken.transferFrom(msg.sender, address(this), amount);
-
-    ul.lockedAt = uint40(block.timestamp);
-    ul.amount = amount;
+    lock.lockedAt = uint40(block.timestamp);
+    lock.user = msg.sender;
     activeLockUpCount += 1;
 
-    emit LockedUp(msg.sender, amount);
+    emit LockedUp(msg.sender, tokenId);
   }
 
-  function unlock() external {
-    LockUp storage ul = userLockUp[msg.sender];
+  function unlock(uint256 tokenId) external {
+    LockUp storage lock = tokenLockUp[tokenId];
 
-    if (ul.lockedAt == 0) revert MungStaker__LockUpDoesNotExists();
-    if (ul.lockedAt + LOCK_UP_DURATION >= block.timestamp) revert MungStaker__LockUpHasNotMatured();
+    if (lock.lockedAt == 0) revert MungStaker__LockUpDoesNotExists();
+    if (lock.lockedAt + LOCK_UP_DURATION >= block.timestamp) revert MungStaker__LockUpHasNotMatured();
 
-    uint256 amountToSend = ul.amount;
-    ul.lockedAt = 0;
-    ul.amount = 0;
+    lock.lockedAt = 0;
+    lock.user = address(0);
     activeLockUpCount -= 1;
 
-    mungToken.transfer(msg.sender, amountToSend);
-    // Distribute farming tokens to the staker, 10% of the MUNG token lock-up amount
-    farmToken.mint(msg.sender, amountToSend * FARMING_RATIO / 10000);
+    mungNFT.transferFrom(address(this), msg.sender, tokenId);
+    // Distribute farming tokens to the staker, 10% of the MUNG token lock-up tokenId
+    mungToken.mint(msg.sender, FARMING_AMOUNT);
 
-    emit Unlocked(msg.sender, uint216(amountToSend));
+    emit Unlocked(msg.sender, tokenId);
   }
 
-  function lockUpExists(address user) external view returns(bool) {
-    return userLockUp[user].lockedAt > 0;
+  function lockUpExists(uint256 tokenId) external view returns(bool) {
+    return tokenLockUp[tokenId].lockedAt > 0;
   }
 }
