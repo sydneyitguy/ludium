@@ -15,6 +15,9 @@ async function main() {
   await mungAirdrop.deployed();
   console.log(` -> MungAirdrop contract deployed at ${mungAirdrop.address}`);
 
+  // Transfer ownership of Mung Token to the airdrop contract so it can mint tokens
+  await mungToken.transferOwnership(mungAirdrop.address);
+
   console.log(`\n\nNetwork: ${hre.network.name}`);
   console.log('```');
   console.log(`- MungToken: ${mungToken.address}`);
