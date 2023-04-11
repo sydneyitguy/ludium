@@ -22,7 +22,7 @@ contract MungMarket {
     IERC721 public mungNFT;
 
     mapping(uint256 => uint256) public itemPrices; // tokenId => price
-    uint256[] public listedItems; // listIndex => tokenId
+    uint256[] public listedItems; // listIndex => tokenId (saving IDs into an array for iteration)
 
     event List(uint256 indexed tokenId, uint256 price, address indexed seller);
     event DeList(uint256 indexed tokenId);

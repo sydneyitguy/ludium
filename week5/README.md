@@ -3,11 +3,11 @@ Practice exercise for a simple NFT marketplace
 
 ## 📄 Contracts
 - MungToken: ERC20 token with Mintable capability
-  - Goerli testnet: [0x32A8cF3C6f88c7211305DD907d171241FCb61f80](https://goerli.etherscan.io/address/0x32A8cF3C6f88c7211305DD907d171241FCb61f80#code)
+  - Goerli testnet: [0x320da45A732c0deEeaD3285D7646098c1b8E9a48](https://goerli.etherscan.io/address/0x320da45A732c0deEeaD3285D7646098c1b8E9a48#code)
 - MungNFT: ERC721 token
-  - Goerli testnet: [0x1c4DaF212C5311ED591044b500BF2EDe88417502](https://goerli.etherscan.io/address/0x1c4DaF212C5311ED591044b500BF2EDe88417502#code)
+  - Goerli testnet: [0x7482F6e5FEC67ced81a97540832eB694247F1B14](https://goerli.etherscan.io/address/0x7482F6e5FEC67ced81a97540832eB694247F1B14#code)
 - MungMarket: A contract for a marketplace with limited functionalities intended for practice purposes
-  - Goerli testnet: [0xa476e720B62Decc1F10858C21687791aB33bb998](https://goerli.etherscan.io/address/0xa476e720B62Decc1F10858C21687791aB33bb998#code)
+  - Goerli testnet: [0xFAfe9F1EcCAF4b5694D1BB8D2C91d623e7A454b1](https://goerli.etherscan.io/address/0xFAfe9F1EcCAF4b5694D1BB8D2C91d623e7A454b1#code)
 
 ## 🧪 Test
 ```shell
